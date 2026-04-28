@@ -2,9 +2,16 @@ package com.heritage.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import lombok.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "monuments")
+@Getter @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Monument {
 
     @Id
@@ -26,25 +33,21 @@ public class Monument {
     private String image;
     private String thumbnail;
 
-    public Monument() {}
+    @Column(length = 500)
+    private String facts;      // pipe-separated
 
-    public Long getId() { return id; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public String getCity() { return city; }
-    public void setCity(String city) { this.city = city; }
-    public String getState() { return state; }
-    public void setState(String state) { this.state = state; }
-    public String getEra() { return era; }
-    public void setEra(String era) { this.era = era; }
-    public String getYear() { return year; }
-    public void setYear(String year) { this.year = year; }
-    public String getCategory() { return category; }
-    public void setCategory(String category) { this.category = category; }
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-    public String getImage() { return image; }
-    public void setImage(String image) { this.image = image; }
-    public String getThumbnail() { return thumbnail; }
-    public void setThumbnail(String thumbnail) { this.thumbnail = thumbnail; }
+    @Column(name = "tour_points", length = 500)
+    private String tourPoints; // pipe-separated
+
+    @OneToMany(mappedBy = "monument", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<TourRegistration> tourRegistrations = new ArrayList<>();
+
+    @OneToMany(mappedBy = "monument", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<MonumentVisit> monumentVisits = new ArrayList<>();
+
+    @OneToMany(mappedBy = "monument", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<Discussion> discussions = new ArrayList<>();
 }

@@ -3,9 +3,17 @@ package com.heritage.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import lombok.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
+@Getter @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class User {
 
     @Id
@@ -22,21 +30,38 @@ public class User {
     @NotBlank
     private String password;
 
-    private String role; // Cultural Enthusiast | Content Creator | Tour Guide | Admin
+    private String role;
 
-    public User() {}
+    @Column(name = "joined_at")
+    @Builder.Default
+    private LocalDateTime joinedAt = LocalDateTime.now();
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<PageVisit> pageVisits = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<TourRegistration> tourRegistrations = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<MonumentVisit> monumentVisits = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<Discussion> discussions = new ArrayList<>();
+
+    // Convenience constructor used by DataSeeder (without id)
     public User(String name, String email, String password, String role) {
-        this.name = name; this.email = email; this.password = password; this.role = role;
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.role = role;
+        this.joinedAt = LocalDateTime.now();
+        this.pageVisits = new ArrayList<>();
+        this.tourRegistrations = new ArrayList<>();
+        this.monumentVisits = new ArrayList<>();
+        this.discussions = new ArrayList<>();
     }
-
-    public Long getId() { return id; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
-    public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
 }
