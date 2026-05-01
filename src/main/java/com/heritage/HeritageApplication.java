@@ -9,3 +9,4 @@ public class HeritageApplication {
         SpringApplication.run(HeritageApplication.class, args);
     }
 }
+@EntityScan("com.heritage.model")
