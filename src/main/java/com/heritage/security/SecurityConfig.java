@@ -1,110 +1,74 @@
 package com.heritage.security;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.util.List;
+import java.io.IOException;
 
-@Configuration
-@EnableWebSecurity
+@Component
 @RequiredArgsConstructor
-public class SecurityConfig {
+public class JwtAuthFilter extends OncePerRequestFilter {
 
-    private final JwtAuthFilter jwtAuthFilter;
+    private final JwtService jwtService; // your JWT utility
+    private final UserDetailsService userDetailsService;
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-            // Disable CSRF for APIs
-            .csrf(AbstractHttpConfigurer::disable)
+    @Override
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain
+    ) throws ServletException, IOException {
 
-            // Enable CORS
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+        final String authHeader = request.getHeader("Authorization");
+        final String jwt;
+        final String userEmail;
 
-            // Stateless session (JWT)
-            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        // ✅ IMPORTANT FIX: allow requests WITHOUT token
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-            // Authorization rules
-            .authorizeHttpRequests(auth -> auth
+        try {
+            jwt = authHeader.substring(7);
+            userEmail = jwtService.extractUsername(jwt);
 
-                // ✅ Allow root (fixes Render 502)
-                .requestMatchers("/").permitAll()
+            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
 
-                // ✅ Allow preflight requests (CORS fix)
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                if (jwtService.isTokenValid(jwt, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
 
-                // ✅ Public auth APIs
-                .requestMatchers("/api/auth/**").permitAll()
+                    authToken.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
 
-                // ✅ Public GET APIs
-                .requestMatchers(HttpMethod.GET, "/api/monuments/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/discussions/**").permitAll()
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            }
 
-                // ✅ Admin only
-                .requestMatchers(HttpMethod.GET,    "/api/users").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT,    "/api/users/**").hasRole("ADMIN")
+        } catch (Exception e) {
+            // ❗ DO NOT BLOCK request if token is invalid
+            // just continue without authentication
+            System.out.println("JWT error: " + e.getMessage());
+        }
 
-                // ✅ Admin + Content Creator
-                .requestMatchers(HttpMethod.POST,   "/api/monuments").hasAnyRole("ADMIN", "CONTENT_CREATOR")
-                .requestMatchers(HttpMethod.PUT,    "/api/monuments/**").hasAnyRole("ADMIN", "CONTENT_CREATOR")
-                .requestMatchers(HttpMethod.DELETE, "/api/monuments/**").hasAnyRole("ADMIN", "CONTENT_CREATOR")
-
-                // ✅ Authenticated users
-                .requestMatchers("/api/activity/**").authenticated()
-                .requestMatchers(HttpMethod.POST,   "/api/discussions").authenticated()
-                .requestMatchers(HttpMethod.DELETE, "/api/discussions/**").authenticated()
-                .requestMatchers(HttpMethod.GET,    "/api/users/**").authenticated()
-
-                // 🔒 Everything else secured
-                .anyRequest().authenticated()
-            )
-
-            // Add JWT filter
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-
-        return http.build();
-    }
-
-    // Password encoder
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    // CORS configuration
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-
-        // 🔥 IMPORTANT: add your frontend deployed URL here
-        config.setAllowedOrigins(List.of(
-                "http://localhost:3000",
-                "https://indianheritageandculture.netlify.app",
-                "https://indianheritageandculture.netlify.app/"
-        ));
-
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setExposedHeaders(List.of("Authorization"));
-        config.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-
-        return source;
+        filterChain.doFilter(request, response);
     }
 }
