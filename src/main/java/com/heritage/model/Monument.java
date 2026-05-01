@@ -42,13 +42,16 @@ public class Monument {
 
     @OneToMany(mappedBy = "monument", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
+    @JsonIgnore
     private List<TourRegistration> tourRegistrations = new ArrayList<>();
 
     @OneToMany(mappedBy = "monument", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
+    @JsonIgnore
     private List<MonumentVisit> monumentVisits = new ArrayList<>();
 
     @OneToMany(mappedBy = "monument", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
+    @JsonIgnore
     private List<Discussion> discussions = new ArrayList<>();
 }
