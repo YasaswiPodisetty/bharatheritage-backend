@@ -9,10 +9,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
+
+// ❌ DO NOT ENABLE NOW
+// import org.springframework.stereotype.Component;
 
 @Slf4j
-@Component
+// ❌ IMPORTANT: KEEP THIS COMMENTED FOR NOW
+// @Component
 @RequiredArgsConstructor
 public class DataSeeder {
 
@@ -20,19 +23,20 @@ public class DataSeeder {
     private final UserRepository userRepo;
     private final PasswordEncoder passwordEncoder;
 
-    // ✅ Runs AFTER app + DB are ready
-   @EventListener(ApplicationReadyEvent.class)
-public void init() {
-    // TEMP DISABLED
-}
-    // Upsert: create if not exists, re-hash password if needed
+    // ✅ Disabled to prevent DB crash loop
+    @EventListener(ApplicationReadyEvent.class)
+    public void init() {
+        // TEMP DISABLED
+    }
+
+    // (keep this code for later — DO NOT delete)
+
     private void seedUsers() {
         upsertUser("Admin User",      "admin@heritage.in",   "admin123", "Admin");
         upsertUser("Test Enthusiast", "test@example.com",    "123456",   "Cultural Enthusiast");
         upsertUser("Content Creator", "creator@example.com", "123456",   "Content Creator");
         upsertUser("Tour Guide",      "guide@example.com",   "123456",   "Tour Guide");
 
-        // existing users
         upsertUser("yashu(ce)",   "yashu@gmail.com",   "123456", "Cultural Enthusiast");
         upsertUser("sreeja(cc)",  "sreeja@gmail.com",  "123456", "Content Creator");
         upsertUser("sahithi(tg)", "sahithi@gmail.com", "123456", "Tour Guide");
