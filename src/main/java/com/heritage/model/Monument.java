@@ -35,23 +35,23 @@ public class Monument {
     private String thumbnail;
 
     @Column(length = 500)
-    private String facts;      // pipe-separated
+    private String facts;
 
     @Column(name = "tour_points", length = 500)
-    private String tourPoints; // pipe-separated
+    private String tourPoints;
 
-    @OneToMany(mappedBy = "monument", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @Builder.Default
+    @OneToMany(mappedBy = "monument", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
+    @Builder.Default
     private List<TourRegistration> tourRegistrations = new ArrayList<>();
 
-    @OneToMany(mappedBy = "monument", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @Builder.Default
+    @OneToMany(mappedBy = "monument", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
+    @Builder.Default
     private List<MonumentVisit> monumentVisits = new ArrayList<>();
 
-    @OneToMany(mappedBy = "monument", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @Builder.Default
+    @OneToMany(mappedBy = "monument", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
+    @Builder.Default
     private List<Discussion> discussions = new ArrayList<>();
 }
