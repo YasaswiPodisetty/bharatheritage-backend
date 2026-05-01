@@ -21,12 +21,10 @@ public class DataSeeder {
     private final PasswordEncoder passwordEncoder;
 
     // ✅ Runs AFTER app + DB are ready
-    @EventListener(ApplicationReadyEvent.class)
-    public void init() {
-        seedUsers();
-        seedMonuments();
-    }
-
+   @EventListener(ApplicationReadyEvent.class)
+public void init() {
+    // TEMP DISABLED
+}
     // Upsert: create if not exists, re-hash password if needed
     private void seedUsers() {
         upsertUser("Admin User",      "admin@heritage.in",   "admin123", "Admin");
